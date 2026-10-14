@@ -1,0 +1,13 @@
+{
+  "built_at": "2026-10-14 12:57",
+  "embed_model": "text-embedding-3-small",
+  "chunks": 1570,
+  "sources": [
+    "BookIIISchemesVolIF.pdf",
+    "BookIIISchemesVolIIF.pdf",
+    "agri_e_pn_2026_27.pdf",
+    "tn_gov_agri_schemes.md",
+    "tnagrisnet_goscheme_subsidies.md",
+    "tnagrisnet_schemes.md"
+  ]
+}

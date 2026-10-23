@@ -12,3 +12,5 @@ pypdf>=5.0
 python-dotenv>=1.0
 requests>=2.31
 beautifulsoup4>=4.12
+rank-bm25>=0.2
+pytest>=8.0

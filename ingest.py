@@ -52,7 +52,14 @@ def load_markdown(path) -> list[Document]:
         if not section.startswith("## "):
             continue
         title = section.splitlines()[0][3:].strip()
-        docs.append(Document(section.strip(), metadata={"source": path.name, "scheme": title}))
+        meta = {"source": path.name, "scheme": title}
+        # The scraper writes the department as "Department: Horticulture / தோட்டக்கலை துறை"
+        # (TNAGRISNET) or "**Concerned Department:** ..." (tn.gov.in). Keep the English part
+        # so rag.py can narrow the search to one department.
+        dept = re.search(r"^(?:Department:|- \*\*Concerned Department:\*\*)\s*([^/\n]+)", section, re.M)
+        if dept:
+            meta["department"] = dept.group(1).strip()
+        docs.append(Document(section.strip(), metadata=meta))
     return docs
 
 

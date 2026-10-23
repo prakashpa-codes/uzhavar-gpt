@@ -47,11 +47,13 @@ https://github.com/user-attachments/assets/940cac27-cc3c-43d6-9863-d31a0f40961e
 ```
 Streamlit UI (app.py) ──HTTP──▶ FastAPI backend (api.py)
                                  ├─ GET  /schemes     scheme directory
-                                 ├─ POST /chat        query rewrite ─▶ FAISS top-k ─▶ LLM (streamed)
+                                 ├─ POST /chat        query rewrite* ─▶ FAISS + BM25 (+ scheme/department filter) ─▶ RRF ─▶ LLM (streamed)
                                  ├─ POST /transcribe  speech ─▶ text
                                  ├─ POST /speak       text ─▶ speech (Tamil / English)
                                  └─ GET  /health
 ```
+\* The rewrite only runs for Tamil questions and follow-ups; a first English question is searched as-is.
+BM25 catches exact terms (PMKSY, GO numbers) that pure vector search can miss.
 | Layer | Technology |
 |---|---|
 | Frontend | Streamlit |
@@ -84,6 +86,22 @@ python ingest.py              # parse, chunk and embed source-data/ into faiss_i
 python ingest.py --dry-run    # parse and chunk only (no API calls)
 ```
 
+## Evaluation and tests
+```bash
+pytest                        # offline checks for PDF line-cleaning and markdown splitting
+python eval.py                # 20 English + Tamil questions -> eval_results.csv
+python eval.py --no-judge     # retrieval metrics only (faster, cheaper)
+```
+`eval.py` checks each question against the source file and passage that hold the answer, and reports
+hit-rate, MRR and an LLM-judge faithfulness score (1-5).
+
+| Version | Hit-rate | MRR (all / en / ta) | Avg retrieval time | Faithfulness |
+|---|---|---|---|---|
+| Dense FAISS only, always rewrite | 1.00 | 0.81 / 0.92 / 0.61 | 1.5 s | - |
+| FAISS + BM25 + filter, RRF, rewrite skip | 1.00 | 0.84 / 0.92 / 0.68 | 1.0 s | 4.9 / 5 |
+
+Numbers move a little between runs (about ±0.03 MRR) because the rewrite step is an LLM call.
+
 ## Project structure
 ```
 app.py                 Streamlit UI
@@ -92,6 +110,8 @@ rag.py                 retrieval and answer generation
 voice.py               speech-to-text and text-to-speech
 config.py              models, paths, settings (overridable via .env)
 ingest.py              builds the FAISS index
+eval.py                retrieval + answer evaluation (hit-rate, MRR, faithfulness)
+tests/                 pytest checks for ingest.py
 scrape_schemes.py      collects portal data
 schemes_catalog.json   scheme directory shown in the UI
 source-data/           original documents and collected data
